@@ -1,4 +1,4 @@
-tvoid detect()
+void detect()
 {
 
 
