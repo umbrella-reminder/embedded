@@ -1,9 +1,6 @@
 void detect()
 {
 
-    //JW
-    /* junseo */
-
 
     return;
 }
