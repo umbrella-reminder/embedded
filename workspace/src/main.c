@@ -1,6 +1,9 @@
 void detect()
 {
-    
+    /* junseo */
+
+
+    return;
 }
 
 void setup()
