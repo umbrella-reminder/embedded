@@ -1,6 +1,6 @@
 void detect()
 {
-    
+    //JW
 }
 
 void setup()
