@@ -1,6 +1,5 @@
-void detect()
+tvoid detect()
 {
-    /* junseo */
 
 
     return;
