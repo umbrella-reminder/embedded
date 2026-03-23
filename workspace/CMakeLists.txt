@@ -5,7 +5,6 @@ set(source_dirs
 
 set(include_dirs
     "include"
-    "include/src"
 )
 
 idf_component_register(

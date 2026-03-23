@@ -37,3 +37,11 @@ void loop()
 //loop end
 }
 
+
+/* entry point for starting */
+int
+app_main(void)
+{
+  return 0;
+}
+
