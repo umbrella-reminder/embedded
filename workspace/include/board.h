@@ -12,8 +12,14 @@
 #define PIN_MAX         38    /* noting to match */
 #endif
 
+
+/*esp32 gpio pinmap*/
+#define DAC_1           25      /*8-bit dac mp3 output */
+#define DAC_2           26
+/*GPIO 6 ~ 11 SPI flash pin*/
+
 #ifdef PIR_SENSOR_ENABLE
-#define PIR_SENSOR_PIN_ID   33      /* PIN ID is TEMP */
+#define PIR_SENSOR_PIN_ID   16      /* PIN ID is TEMP */
 #endif
 
 #define TRUE 1
