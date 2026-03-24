@@ -1,5 +1,8 @@
-
 #include "board.h"
+
+#ifdef WIFI_AP_ENABLE
+#include "wifi_ap.h"
+#endif /*WIFI_AP_ENABLE*/
 
 struct board_pin_mgmt pin[PIN_MAX] =
 {
@@ -10,6 +13,13 @@ struct board_pin_mgmt pin[PIN_MAX] =
     .def_val = TRUE
   },
 #endif /* PIR_SENSOR_ENABLE */
+#ifdef WIFI_INDICATOR_ENABLE
+  {
+    .num = WIFI_INDICATOR_PIN_ID,
+    .enable = TRUE,
+    .def_val = FALSE
+  },
+#endif /* WIFI_INDICATOR_ENABLE */
 };
 
 void detect()
@@ -42,6 +52,9 @@ void loop()
 int
 app_main(void)
 {
+#ifdef WIFI_AP_ENABLE
+  wifi_ap_init ();
+#endif /* WIFI_AP_ENABLE*/
   return 0;
 }
 

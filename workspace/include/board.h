@@ -22,8 +22,12 @@
 #define PIR_SENSOR_PIN_ID   13      /* PIN ID is TEMP */
 #endif
 
-#define TRUE 1
-#define FALSE 0
+#ifdef WIFI_INDICATOR_ENABLE
+#define WIFI_INDICATOR_PIN_ID   30
+#endif
+
+#define TRUE  true
+#define FALSE false
 
 struct board_pin_mgmt
 {

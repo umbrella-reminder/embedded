@@ -10,5 +10,13 @@
 
 /* Enable speaker */
 #define SPEAKER_ENABLE
- 
+
+/* Enable WIFI AP Mode */
+#define WIFI_AP_ENABLE
+
+#ifdef WIFI_AP_ENABLE
+/* Enable WIFI Indicator LED */
+#define WIFI_INDICATOR_ENABLE
+#endif
+
 #endif /* __UMBRELLA_REMINDER_H__ */
