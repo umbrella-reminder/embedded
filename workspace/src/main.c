@@ -1,3 +1,17 @@
+
+#include "board.h"
+
+struct board_pin_mgmt pin[PIN_MAX] =
+{
+#ifdef PIR_SENSOR_ENABLE
+  {
+    .num = PIR_SENSOR_PIN_ID,
+    .enable = TRUE,
+    .def_val = TRUE
+  },
+#endif /* PIR_SENSOR_ENABLE */
+};
+
 void detect()
 {
     // sdfsdfd
@@ -7,14 +21,27 @@ void detect()
 
 void setup()
 {
+
 //setup begin
 
+/* pin configurion ~~*/
+
+  /* pin */
 //setup end
 }
+
 void loop()
 {
 //loop begin
 
 //loop end
+}
+
+
+/* entry point for starting */
+int
+app_main(void)
+{
+  return 0;
 }
 
