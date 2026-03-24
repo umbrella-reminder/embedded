@@ -19,7 +19,7 @@
 /*GPIO 6 ~ 11 SPI flash pin*/
 
 #ifdef PIR_SENSOR_ENABLE
-#define PIR_SENSOR_PIN_ID   16      /* PIN ID is TEMP */
+#define PIR_SENSOR_PIN_ID   13      /* PIN ID is TEMP */
 #endif
 
 #define TRUE 1
