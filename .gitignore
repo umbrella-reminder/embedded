@@ -1,0 +1,21 @@
+# 빌드 결과물 제외 (가장 중요)
+build/
+
+# 설정 파일 백업 및 임시 파일 제외
+sdkconfig.old
+sdkconfig.temp
+
+# VS Code 관련 설정 중 개인적인 것들
+.vscode/
+! .vscode/extensions.json
+! .vscode/launch.json
+! .vscode/settings.json
+
+# 파이썬 가상환경 및 컴파일러 캐시
+.cache/
+__pycache__/
+*.py[cod]
+*$py.class
+
+# 로그 파일
+*.log

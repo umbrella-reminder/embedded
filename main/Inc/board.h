@@ -1,16 +1,20 @@
-#include <stdbool.h>
+#include <stdio.h>
+#include "freertos/FreeRTOS.h"
+#include "freertos/task.h"
+#include "driver/gpio.h"
+#include "esp_log.h"
 #include "umbrella_reminder_feature.h"
 
-/* board define */
-#ifndef __BOARD_H__
-#define __BOARD_H__
+// /* board define */
+// #ifndef __BOARD_H__
+// #define __BOARD_H__
 
 
-#ifdef ESP32_BOARD_ENABLE
-#define PIN_MAX         38
-#else 
-#define PIN_MAX         38    /* noting to match */
-#endif
+// #ifdef ESP32_BOARD_ENABLE
+// #define PIN_MAX         38
+// #else 
+// #define PIN_MAX         38    /* noting to match */
+// #endif
 
 
 /*esp32 gpio pinmap*/
@@ -19,7 +23,7 @@
 /*GPIO 6 ~ 11 SPI flash pin*/
 
 #ifdef PIR_SENSOR_ENABLE
-#define PIR_SENSOR_PIN_ID   13      /* PIN ID is TEMP */
+#define PIR_SENSOR_PIN   13      /* PIN ID is TEMP */
 #endif
 
 #define TRUE 1
@@ -34,4 +38,4 @@ struct board_pin_mgmt
     bool def_val;          /* default value */
 };
 
-#endif /* __BOARD_H__ */
+// #endif /* __BOARD_H__ */
