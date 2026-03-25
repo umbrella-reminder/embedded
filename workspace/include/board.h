@@ -1,4 +1,15 @@
+/* common header */
 #include <stdbool.h>
+#include <string.h>
+#include <stdio.h>
+
+/* device system header */
+#include "lwip/err.h"
+#include "lwip/sys.h"
+#include "esp_log.h"
+#include "esp_system.h"
+
+/* user header */
 #include "umbrella_reminder_feature.h"
 
 /* board define */
@@ -29,6 +40,17 @@
 #define TRUE  true
 #define FALSE false
 
+struct board_mgmt
+{
+    bool netif_init; /* TCP/IP Stack Enable */
+
+    bool event_loop; /* Event Enable */
+
+    bool wifi_ap_mode; /* wifi ap mode enable */
+};
+
+extern struct board_mgmt board;
+
 struct board_pin_mgmt
 {
     unsigned int num;   /* pin number */
@@ -37,5 +59,7 @@ struct board_pin_mgmt
 
     bool def_val;          /* default value */
 };
+
+extern struct board_pin_mgmt pin[PIN_MAX];
 
 #endif /* __BOARD_H__ */

@@ -14,5 +14,5 @@ idf_component_register(
     INCLUDE_DIRS "${include_dirs}"
 
 
-    REQUIRES esp_wifi esp_driver_ledc
+    REQUIRES esp_wifi nvs_flash
 )

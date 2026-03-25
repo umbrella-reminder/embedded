@@ -4,6 +4,12 @@
 #include "wifi_ap.h"
 #endif /*WIFI_AP_ENABLE*/
 
+
+
+/* global variable for board specific data */
+struct board_mgmt board;
+
+/* global variable for pin infomation */
 struct board_pin_mgmt pin[PIN_MAX] =
 {
 #ifdef PIR_SENSOR_ENABLE
