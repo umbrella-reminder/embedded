@@ -96,6 +96,72 @@ dhcp_option_update (esp_netif_t *dhcp_if, int option, void *op_v, unsigned int o
 }
 
 int
+root_get_handler (httpd_req_t *req)
+{
+    FILE* fp = fopen("web/index.html", "r");
+    char chunk[512];
+    size_t read_bytes;
+
+    if (fp == NULL)
+    {
+        httpd_resp_send_404(req);
+    }
+
+    httpd_resp_set_type(req, "text/html");
+    while ((read_bytes = fread(chunk, 1, sizeof(chunk), fp)) > 0)
+    {
+        if (httpd_resp_send_chunk(req, chunk, read_bytes) != ESP_OK)
+        {
+            fclose(fp);
+            return ESP_FAIL;
+        }
+    }
+
+    fclose(fp);
+    return 0;
+}
+
+static const httpd_uri_t uri_handler =
+{
+    .uri = "/",
+    .method = HTTP_GET,
+    .handler = root_get_handler,
+};
+
+esp_err_t
+http_404_error_handler(httpd_req_t *req, httpd_err_code_t err)
+{
+    httpd_resp_set_status(req, "303 See Other");
+    httpd_resp_send(req, "Redirect to the captive portal", HTTPD_RESP_USE_STRLEN);
+    return ESP_OK;
+}
+
+int
+start_web_server (void)
+{
+    httpd_handle_t server = NULL;
+    httpd_config_t config = HTTPD_DEFAULT_CONFIG();
+  
+    config.max_open_sockets = 2;
+    config.lru_purge_enable = TRUE;
+
+    if (httpd_start (&server, &config) == ESP_OK)
+    {
+        ESP_LOGI ("WEB-START", "Web registering");
+
+        httpd_register_uri_handler(server, &uri_handler);
+        httpd_register_err_handler(server, HTTPD_404_NOT_FOUND,
+                                   http_404_error_handler);
+    }
+    else
+    {
+        return -1;
+    }
+
+    return 0;
+}
+
+int
 captive_portal_start (void)
 {
     char ip_addr[16];
@@ -129,6 +195,11 @@ captive_portal_start (void)
     if (dhcp_option_update(netif, ESP_NETIF_CAPTIVEPORTAL_URI,
                            captive_portal_url, sizeof(captive_portal_url),
                            ESP_NETIF_OP_SET))
+    {
+        goto _err;
+    }
+
+    if (start_web_server ())
     {
         goto _err;
     }
@@ -196,6 +267,7 @@ wifi_ap_init (void)
     /* wifi on */
     ESP_ERROR_CHECK(esp_wifi_start());
 
+    /* captive portal init */
     ESP_ERROR_CHECK(captive_portal_start());
 
     return rv;
