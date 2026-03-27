@@ -11,7 +11,12 @@
 #include "freertos/task.h"
 #include "esp_wifi.h"
 #include "esp_mac.h"
+#include "esp_http_server.h"
+#include "nvs_flash.h"
+#include "esp_netif.h"
 
+
+char *captive_portal_url = NULL;
 char ssid_header[] = "ESP32-AP-";
 char wifi_ap_password[] = "12345678"; /* initial password. it can be changed. */
 
@@ -75,6 +80,67 @@ wifi_config_t_init (wifi_config_t *config)
 }
 
 int
+dhcp_option_update (esp_netif_t *dhcp_if, int option, void *op_v, unsigned int op_len, int oper)
+{
+    if (NULL == dhcp_if)
+    {
+        return -1;   
+    }
+
+    /* update option */
+    ESP_ERROR_CHECK(esp_netif_dhcps_stop(dhcp_if));
+    ESP_ERROR_CHECK(esp_netif_dhcps_option(dhcp_if, oper, option, op_v, op_len));
+    ESP_ERROR_CHECK(esp_netif_dhcps_start(dhcp_if));
+
+    return 0;
+}
+
+int
+captive_portal_start (void)
+{
+    char ip_addr[16];
+
+    esp_netif_t *netif = NULL;
+    esp_netif_ip_info_t ip_info;
+
+    /* get currnet ip address for wifi ap */
+    esp_netif_get_ip_info(esp_netif_get_handle_from_ifkey("WIFI_AP_DEF"), &ip_info);
+    inet_ntoa_r(ip_info.ip.addr, ip_addr, 16);
+
+    /* memory allocation for url string */
+    captive_portal_url = malloc (CAPTIVE_PORTAL_URL_SIZE * sizeof(char));
+    if (NULL == captive_portal_url)
+    {
+        ESP_LOGI ("MEM-ERR", "Captive portal Memmory allocation fail\n");
+        return -1;
+    }
+
+    /* build url string with ip address */
+    snprintf (captive_portal_url, CAPTIVE_PORTAL_URL_SIZE, "%s%s", "http://", ip_addr);
+
+    /* get dbcp interface */
+    netif = esp_netif_get_handle_from_ifkey("WIFI_AP_DEF");
+    if (NULL == netif)
+    {
+        ESP_LOGI ("MEM-ERR", "Captive portal Memmory allocation fail\n");
+        goto _err;
+    }
+
+    if (dhcp_option_update(netif, ESP_NETIF_CAPTIVEPORTAL_URI,
+                           captive_portal_url, sizeof(captive_portal_url),
+                           ESP_NETIF_OP_SET))
+    {
+        goto _err;
+    }
+
+    return 0;
+
+_err:
+    free(captive_portal_url);
+    return -1;
+}
+
+int
 wifi_ap_init (void)
 {
     int rv = 0;
@@ -95,6 +161,12 @@ wifi_ap_init (void)
     {
         /* Enable event */
         ESP_ERROR_CHECK(esp_event_loop_create_default());
+    }
+
+    if (board.nvs_flash == FALSE)
+    {
+        /* need to init nvs flash for wifi init */
+        ESP_ERROR_CHECK(nvs_flash_init());
     }
 
     /* register wifi ap event handler for default interface.
@@ -123,6 +195,8 @@ wifi_ap_init (void)
 
     /* wifi on */
     ESP_ERROR_CHECK(esp_wifi_start());
+
+    ESP_ERROR_CHECK(captive_portal_start());
 
     return rv;
 }

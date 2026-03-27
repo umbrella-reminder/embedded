@@ -6,8 +6,11 @@
 /* device system header */
 #include "lwip/err.h"
 #include "lwip/sys.h"
+#include "lwip/inet.h"
+
 #include "esp_log.h"
 #include "esp_system.h"
+#include "esp_event.h"
 
 /* user header */
 #include "umbrella_reminder_feature.h"
@@ -47,6 +50,8 @@ struct board_mgmt
     bool event_loop; /* Event Enable */
 
     bool wifi_ap_mode; /* wifi ap mode enable */
+
+    bool nvs_flash; /* Non volatile enable */
 };
 
 extern struct board_mgmt board;
