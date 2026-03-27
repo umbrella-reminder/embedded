@@ -15,4 +15,5 @@ idf_component_register(
 
 
     REQUIRES esp_wifi nvs_flash
+    EMBED_FILES "api/index.html"
 )
