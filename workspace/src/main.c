@@ -58,6 +58,7 @@ void loop()
 int
 app_main(void)
 {
+  ESP_LOGI ("SYS", "Boot Start");
 #ifdef WIFI_AP_ENABLE
   wifi_ap_init ();
 #endif /* WIFI_AP_ENABLE*/
