@@ -13,6 +13,6 @@ idf_component_register(
     SRCS "${source_dirs}"
     INCLUDE_DIRS "${include_dirs}"
 
-
     REQUIRES esp_wifi nvs_flash esp_http_server spiffs
+    EMBED_FILES "api/index.html"
 )

@@ -1,0 +1,31 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="icon" href="assets/favicon.ico">
+    <link rel="stylesheet" href="style.css">
+    <title>우산 알리미</title>
+</head>
+<body>
+    <header>
+        <img src="assets/logo.png" alt="우산 알리미 로고" class="logo">
+        <h1>우산 알리미</h1>
+    </header>
+    <form id="configForm">
+        <input type="text" placeholder="공유기 ID" id="wifiId" required>
+        <input type="password" placeholder="공유기 비밀번호" id="wifiPassword" required>
+        <select id="level1" required>
+            <option value="">시/도</option>
+        </select >
+        <select id="level2" disabled required>
+            <option value="">시/군/구</option>
+        </select disabled>
+        <select id="level3" disabled required>
+            <option value="">동/읍/면</option>
+        </select>
+        <button type="submit">제출</button>
+    </form>
+    <script type="module" src="main.js"></script>
+</body>
+</html>
