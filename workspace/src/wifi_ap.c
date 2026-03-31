@@ -147,7 +147,10 @@ http_404_error_handler(httpd_req_t *req, httpd_err_code_t err)
 {
 #if 1
     httpd_resp_set_status(req, "302 Found");
-    httpd_resp_set_hdr(req, "Location", "http://192.168.4.1");
+    httpd_resp_set_hdr(req, "Location", "http://192.168.4.1/");
+    httpd_resp_set_hdr(req, "Cache-Control", "no-cache, no-store, must-revalidate");
+    httpd_resp_set_hdr(req, "Pragma", "no-cache");
+    httpd_resp_set_hdr(req, "Expires", "0");
     httpd_resp_send(req, NULL, 0);
 #else
     ESP_LOGI ("WEB-INFO", "404 ERR type (%d)", err);
@@ -514,6 +517,7 @@ dns_server_task(void *arg)
 
         if (size > 0 && send_size > 0)
         {
+            ESP_LOGI ("DNS-INFO", "Send DNS Response");
             /* send */
             sendto (sock, resp, send_size, 0, (struct sockaddr *)&remote_addr, sizeof(struct sockaddr_in));
         }
@@ -542,6 +546,7 @@ captive_portal_start (void)
 {
     char ip_addr[16];
 
+    ip4_addr_t dns_server;
     esp_netif_t *netif = NULL;
     esp_netif_ip_info_t ip_info;
 
@@ -575,6 +580,7 @@ captive_portal_start (void)
     {
         goto _err;
     }
+
 
     if (start_dns_server())
     {
