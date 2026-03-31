@@ -215,7 +215,6 @@ dns_recive_hdr_check (dns_header *hdr, int size)
     return 1;
 }
 
-#if 1
 static char *label_to_str(char *packet, char *labelPtr, int packetSz, char *res, int resMaxLen)
 {
     int i = 0, j, k;
@@ -304,86 +303,17 @@ static char *str_to_label(char *str, char *label, int maxLen)
     
     return p;
 }
-#else
-static char *label_to_str(char *packet, char *labelPtr, int packetSz, char *res, int resMaxLen)
-{
-  int i, j, k;
-  char *endPtr = NULL;
-  i = 0;
-  do
-  {
-    if ((*labelPtr & 0xC0) == 0)
-    {
-      j = *labelPtr++; // skip past length
-      // Add separator period if there already is data in res
-      if (i < resMaxLen && i != 0)
-        res[i++] = '.';
-      // Copy label to res
-      for (k = 0; k < j; k++)
-      {
-        if ((labelPtr - packet) > packetSz)
-          return NULL;
-        if (i < resMaxLen)
-          res[i++] = *labelPtr++;
-      }
-    }
-    else if ((*labelPtr & 0xC0) == 0xC0)
-    {
-      // Compressed label pointer
-      endPtr = labelPtr + 2;
-      int offset = ntohs(*((short unsigned int *)labelPtr)) & 0x3FFF;
-      // Check if offset points to somewhere outside of the packet
-      if (offset > packetSz)
-        return NULL;
-      labelPtr = &packet[offset];
-    }
-    // check for out-of-bound-ness
-    if ((labelPtr - packet) > packetSz)
-      return NULL;
-  } while (*labelPtr != 0);
-  res[i] = 0; // zero-terminate
-  if (endPtr == NULL)
-    endPtr = labelPtr + 1;
-  return endPtr;
-}
-
-// Converts a dotted hostname to the weird label form dns uses.
-static char *str_to_label(char *str, char *label, int maxLen)
-{
-  char *len = label;   // ptr to len byte
-  char *p = label + 1; // ptr to next label byte to be written
-  while (1)
-  {
-    if (*str == '.' || *str == 0)
-    {
-      *len = ((p - len) - 1); // write len of label bit
-      len = p;                // pos of len for next part
-      p++;                    // data ptr is one past len
-      if (*str == 0)
-        break; // done
-      str++;
-    }
-    else
-    {
-      *p++ = *str++; // copy byte
-                     //if ((p-label)>maxLen) return NULL;	// check out of bounds
-    }
-  }
-  *len = 0;
-  return p; // ptr to first free byte in resp
-}
-#endif
 
 int
 dns_response_build (struct sockaddr_in *remote, uint8_t *data, int size, uint8_t *resp)
 {
     char domain[DNS_PACKET_SIZE_MAX];
-    char question_count, i;
+    uint16_t question_count, i;
 
     dns_header *data_hdr = (dns_header *) data;
     dns_header *reply_hdr = (dns_header *) resp;
-    char *data_p = (char *)data;
-    char *resp_p = (char *)resp;
+    char *data_p = NULL;
+    char *resp_p = NULL;
 
     /* check null ptr */
     if (NULL == remote || NULL == data || NULL == resp)
@@ -400,8 +330,11 @@ dns_response_build (struct sockaddr_in *remote, uint8_t *data, int size, uint8_t
     /* copy origin data */
     memcpy (resp, data, size);
 
+    /* set reply packet body */
+    resp_p = (char *)resp + size;
+ 
     /* set dns packet body */
-    data_p += size;
+    data_p = (char *)data + sizeof(dns_header);
 
     /* get reuqest count */
     question_count = ntohs(data_hdr->qdcount);
@@ -410,41 +343,43 @@ dns_response_build (struct sockaddr_in *remote, uint8_t *data, int size, uint8_t
 
     for (i = 0; i < question_count; i++)
     {
-        /* get label in the body */
-        dns_question_footer *dns_footer = 
-          (dns_question_footer *)label_to_str((char *)data, data_p, 
-                                               size, domain, sizeof(domain));
-        if (dns_footer == NULL)
+        /* dns label change to string */
+        void *next_q = label_to_str((char *)data, data_p, size, domain, sizeof(domain));
+        if (next_q == NULL) 
         {
             return 0;
         }
 
-        /* set next data */
-        data_p = ((char *)dns_footer) + sizeof (dns_question_footer);
+        dns_question_footer *dns_footer = (dns_question_footer *)next_q;
+        data_p = (char *)(dns_footer + 1);
 
-        ESP_LOGI ("DNS-INFO","CAPTIVE Portal DNS qurey %s", domain);
+        ESP_LOGI("DNS-INFO", "CAPTIVE Portal DNS query %s", domain);
 
-        if (ntohs (dns_footer->type) == WIFI_CAPTIVE_PORTAL_ESP_IDF_DNS_QTYPE_A)
+        /* build response packet */
+        if (ntohs(dns_footer->type) == WIFI_CAPTIVE_PORTAL_ESP_IDF_DNS_QTYPE_A)
         {
             esp_netif_ip_info_t ip_info;
 
-            dns_resource_footer *dns_res_footer = 
-              (dns_resource_footer*) str_to_label(domain, resp_p + size, (DNS_PACKET_SIZE_MAX - size));
-
-            if (dns_res_footer == NULL)
+            /* change to label */
+            char *next_r = str_to_label(domain, resp_p, (DNS_PACKET_SIZE_MAX - (resp_p - (char*)resp)));
+            if (next_r == NULL) 
             {
                 return 0;
             }
 
-            resp_p = ((char *)dns_res_footer) + sizeof(dns_resource_footer);
+            dns_resource_footer *dns_res_footer = (dns_resource_footer *)next_r;
+            
+            resp_p = (char *)(dns_res_footer + 1);
 
             dns_res_footer->type = htons(WIFI_CAPTIVE_PORTAL_ESP_IDF_DNS_QTYPE_A);
             dns_res_footer->cl = htons(WIFI_CAPTIVE_PORTAL_ESP_IDF_DNS_QCLASS_IN);
-            dns_res_footer->ttl = htons(0);
+            dns_res_footer->ttl = htonl(0);
             dns_res_footer->rdlength = htons(4);
 
+            /* get wifi ip */
             esp_netif_get_ip_info(esp_netif_get_handle_from_ifkey("WIFI_AP_DEF"), &ip_info);
 
+            /* set wifi ip */
             resp_p[0] = ip4_addr1(&ip_info.ip);
             resp_p[1] = ip4_addr2(&ip_info.ip);
             resp_p[2] = ip4_addr3(&ip_info.ip);
