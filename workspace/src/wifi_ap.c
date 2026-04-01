@@ -115,6 +115,7 @@ root_get_handler (httpd_req_t *req)
     ESP_LOGI("WEB-INFO", "HTTP root send OK");
     return 0;
 }
+
 static const httpd_uri_t uri_handler_3 =
 {
     .uri = "/redirect",
@@ -145,17 +146,13 @@ static const httpd_uri_t uri_handler =
 esp_err_t
 http_404_error_handler(httpd_req_t *req, httpd_err_code_t err)
 {
-#if 1
     httpd_resp_set_status(req, "302 Found");
     httpd_resp_set_hdr(req, "Location", "http://192.168.4.1/");
     httpd_resp_set_hdr(req, "Cache-Control", "no-cache, no-store, must-revalidate");
     httpd_resp_set_hdr(req, "Pragma", "no-cache");
     httpd_resp_set_hdr(req, "Expires", "0");
     httpd_resp_send(req, NULL, 0);
-#else
-    ESP_LOGI ("WEB-INFO", "404 ERR type (%d)", err);
-    root_get_handler (req);
-#endif
+
     return ESP_OK;
 }
 
@@ -358,21 +355,22 @@ dns_response_build (struct sockaddr_in *remote, uint8_t *data, int size, uint8_t
 
         ESP_LOGI("DNS-INFO", "CAPTIVE Portal DNS query %s", domain);
 
+        /* change to label */
+        char *next_r = str_to_label(domain, resp_p, (DNS_PACKET_SIZE_MAX - (resp_p - (char *)resp)));
+        if (next_r == NULL)
+        {
+            ESP_LOGI("DNS-ERR", "Max size over");
+            return 0;
+        }
+
+        dns_resource_footer *dns_res_footer = (dns_resource_footer *)next_r;
+
+        resp_p = (char *)(dns_res_footer + 1);
+
         /* build response packet */
         if (ntohs(dns_footer->type) == WIFI_CAPTIVE_PORTAL_ESP_IDF_DNS_QTYPE_A)
         {
             esp_netif_ip_info_t ip_info;
-
-            /* change to label */
-            char *next_r = str_to_label(domain, resp_p, (DNS_PACKET_SIZE_MAX - (resp_p - (char*)resp)));
-            if (next_r == NULL) 
-            {
-                return 0;
-            }
-
-            dns_resource_footer *dns_res_footer = (dns_resource_footer *)next_r;
-            
-            resp_p = (char *)(dns_res_footer + 1);
 
             dns_res_footer->type = htons(WIFI_CAPTIVE_PORTAL_ESP_IDF_DNS_QTYPE_A);
             dns_res_footer->cl = htons(WIFI_CAPTIVE_PORTAL_ESP_IDF_DNS_QCLASS_IN);
@@ -389,44 +387,46 @@ dns_response_build (struct sockaddr_in *remote, uint8_t *data, int size, uint8_t
             resp_p[3] = ip4_addr4(&ip_info.ip);
             resp_p += 4;
 
-            reply_hdr->ancount = htons(ntohs(reply_hdr->ancount) + 1);
         }
-#if 0
-            else if (my_ntohs(&qf->type) == WIFI_CAPTIVE_PORTAL_ESP_IDF_DNS_QTYPE_NS)
-    {
-      // Give ns server. Basically can be whatever we want because it'll get resolved to our IP later anyway.
-      rend = str_to_label(buff, rend, sizeof(reply) - (rend - reply)); // Add the label
-      DnsResourceFooter *rf = (DnsResourceFooter *)rend;
-      rend += sizeof(DnsResourceFooter);
-      setn16(&rf->type, WIFI_CAPTIVE_PORTAL_ESP_IDF_DNS_QTYPE_NS);
-      setn16(&rf->cl, WIFI_CAPTIVE_PORTAL_ESP_IDF_DNS_QCLASS_IN);
-      setn16(&rf->ttl, 0);
-      setn16(&rf->rdlength, 4);
-      *rend++ = 2;
-      *rend++ = 'n';
-      *rend++ = 's';
-      *rend++ = 0;
-      setn16(&rhdr->ancount, my_ntohs(&rhdr->ancount) + 1);
-    }
-    else if (my_ntohs(&qf->type) == WIFI_CAPTIVE_PORTAL_ESP_IDF_DNS_QTYPE_URI)
-    {
-      // Give uri to us
-      rend = str_to_label(buff, rend, sizeof(reply) - (rend - reply)); // Add the label
-      DnsResourceFooter *rf = (DnsResourceFooter *)rend;
-      rend += sizeof(DnsResourceFooter);
-      DnsUriHdr *uh = (DnsUriHdr *)rend;
-      rend += sizeof(DnsUriHdr);
-      setn16(&rf->type, WIFI_CAPTIVE_PORTAL_ESP_IDF_DNS_QTYPE_URI);
-      setn16(&rf->cl, WIFI_CAPTIVE_PORTAL_ESP_IDF_DNS_QCLASS_URI);
-      setn16(&rf->ttl, 0);
-      setn16(&rf->rdlength, 4 + 16);
-      setn16(&uh->prio, 10);
-      setn16(&uh->weight, 1);
-      memcpy(rend, "http://esp.nonet", 16);
-      rend += 16;
-      setn16(&rhdr->ancount, my_ntohs(&rhdr->ancount) + 1);
-    }
-#endif
+        else if (ntohs(dns_footer->type) == WIFI_CAPTIVE_PORTAL_ESP_IDF_DNS_QTYPE_NS)
+        {
+            dns_res_footer->type = htons(WIFI_CAPTIVE_PORTAL_ESP_IDF_DNS_QTYPE_NS);
+            dns_res_footer->cl = htons(WIFI_CAPTIVE_PORTAL_ESP_IDF_DNS_QCLASS_IN);
+            dns_res_footer->ttl = htonl(0);
+            dns_res_footer->rdlength = htons(4);
+
+            /* set wifi ip */
+            resp_p[0] = 2;
+            resp_p[1] = 'n';
+            resp_p[2] = 's';
+            resp_p[3] = 0;
+            resp_p += 4;
+        }
+        else if (ntohs(dns_footer->type) == WIFI_CAPTIVE_PORTAL_ESP_IDF_DNS_QTYPE_URI)
+        {
+            dns_uri_hdr *uri_hdr = (dns_uri_hdr *) resp_p;
+
+            resp_p += sizeof (dns_uri_hdr);
+
+            dns_res_footer->type = htons(WIFI_CAPTIVE_PORTAL_ESP_IDF_DNS_QTYPE_URI);
+            dns_res_footer->cl = htons(WIFI_CAPTIVE_PORTAL_ESP_IDF_DNS_QCLASS_URI);
+            dns_res_footer->ttl = htonl(0);
+            dns_res_footer->rdlength = htons(4 + 16);
+
+            uri_hdr->prio = htons(10);
+            uri_hdr->weight = htons(1);
+
+            memcpy (resp_p, "http://esp.nonet", 16);
+
+            resp_p += 16;
+        }
+        else
+        {
+            ESP_LOGI ("DNS-INFO", "Type not match");
+            return 0;
+        }
+
+        reply_hdr->ancount = htons(ntohs(reply_hdr->ancount) + 1);
     }
 
     return (int) (resp_p - (char *)resp);
@@ -546,7 +546,6 @@ captive_portal_start (void)
 {
     char ip_addr[16];
 
-    ip4_addr_t dns_server;
     esp_netif_t *netif = NULL;
     esp_netif_ip_info_t ip_info;
 
