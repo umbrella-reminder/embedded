@@ -14,5 +14,5 @@ idf_component_register(
     INCLUDE_DIRS "${include_dirs}"
 
     REQUIRES esp_wifi nvs_flash esp_http_server
-    EMBED_FILES "web/index.html" "web/assets/favicon.ico" "web/assets/logo.png" "web/data/address.json" "web/main.js"
+    EMBED_FILES "web/index.html" "web/assets/favicon.ico" "web/assets/logo.png" "web/data/address.json" "web/main.js" "web/style.css"
 )

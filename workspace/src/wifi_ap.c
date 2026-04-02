@@ -116,31 +116,146 @@ root_get_handler (httpd_req_t *req)
     return 0;
 }
 
-static const httpd_uri_t uri_handler_3 =
-{
-    .uri = "/redirect",
-    .method = HTTP_GET,
-    .handler = root_get_handler,
-};
-
-static const httpd_uri_t uri_handler_1 =
-{
-    .uri = "/quickaccess/config/background.json",
-    .method = HTTP_GET,
-    .handler = root_get_handler,
-};
-static const httpd_uri_t uri_handler_2 =
-{
-    .uri = "/connecttest.txt",
-    .method = HTTP_GET,
-    .handler = root_get_handler,
-};
-
 static const httpd_uri_t uri_handler =
 {
     .uri = "/",
     .method = HTTP_GET,
     .handler = root_get_handler,
+};
+
+extern const unsigned char favicon_ico_start[] asm("_binary_favicon_ico_start");
+extern const unsigned char favicon_ico_end[] asm("_binary_favicon_ico_end");
+
+int
+favicon_ico_get_handler (httpd_req_t *req)
+{
+    size_t size = favicon_ico_end - favicon_ico_start;
+
+    httpd_resp_set_type(req, "image/x-icon");
+
+    if (0 > httpd_resp_send (req, (const char*)favicon_ico_end, size))
+    {
+        ESP_LOGE("WEB-ERR", "HTTP Response err");
+        return -1;
+    }
+
+    ESP_LOGI("WEB-INFO", "HTTP root send OK");
+    return 0;
+}
+
+static const httpd_uri_t uri_favicon_ico_handler =
+{
+    .uri = "/assets/favicon.ico",
+    .method = HTTP_GET,
+    .handler = favicon_ico_get_handler,
+};
+
+extern const unsigned char logo_png_start[] asm("_binary_logo_png_start");
+extern const unsigned char logo_png_end[] asm("_binary_logo_png_end");
+
+int
+logo_png_get_handler (httpd_req_t *req)
+{
+    size_t size = logo_png_end - logo_png_start;
+
+    httpd_resp_set_type(req, "image/png");
+
+    if (0 > httpd_resp_send (req, (const char*)logo_png_start, size))
+    {
+        ESP_LOGE("WEB-ERR", "HTTP Response err");
+        return -1;
+    }
+
+    ESP_LOGI("WEB-INFO", "HTTP root send OK");
+    return 0;
+}
+
+static const httpd_uri_t uri_logo_png_handler =
+{
+    .uri = "/assets/logo.png",
+    .method = HTTP_GET,
+    .handler = logo_png_get_handler,
+};
+
+extern const unsigned char address_json_start[] asm("_binary_address_json_start");
+extern const unsigned char address_json_end[] asm("_binary_address_json_end");
+
+int
+address_json_get_handler (httpd_req_t *req)
+{
+    size_t size = address_json_end - address_json_start;
+
+    httpd_resp_set_type(req, "application/json");
+
+    if (0 > httpd_resp_send (req, (const char*)address_json_start, size))
+    {
+        ESP_LOGE("WEB-ERR", "HTTP Response err");
+        return -1;
+    }
+
+    ESP_LOGI("WEB-INFO", "HTTP root send OK");
+    return 0;
+}
+
+static const httpd_uri_t uri_address_json_handler =
+{
+    .uri = "/data/address.json",
+    .method = HTTP_GET,
+    .handler = address_json_get_handler,
+};
+
+extern const unsigned char main_js_start[] asm("_binary_main_js_start");
+extern const unsigned char main_js_end[] asm("_binary_main_js_end");
+
+int
+main_js_get_handler (httpd_req_t *req)
+{
+    size_t size = main_js_end - main_js_start;
+
+    httpd_resp_set_type(req, "application/javascript");
+
+    if (0 > httpd_resp_send (req, (const char*)main_js_start, size))
+    {
+        ESP_LOGE("WEB-ERR", "HTTP Response err");
+        return -1;
+    }
+
+    ESP_LOGI("WEB-INFO", "HTTP root send OK");
+    return 0;
+}
+
+static const httpd_uri_t uri_main_js_handler =
+{
+    .uri = "/main.js",
+    .method = HTTP_GET,
+    .handler = main_js_get_handler,
+};
+
+extern const unsigned char style_css_start[] asm("_binary_style_css_start");
+extern const unsigned char style_css_end[] asm("_binary_style_css_end");
+
+int
+style_css_get_handler (httpd_req_t *req)
+{
+    size_t size = style_css_end - style_css_start;
+
+    httpd_resp_set_type(req, "text/css");
+
+    if (0 > httpd_resp_send (req, (const char*)style_css_start, size))
+    {
+        ESP_LOGE("WEB-ERR", "HTTP Response err");
+        return -1;
+    }
+
+    ESP_LOGI("WEB-INFO", "HTTP root send OK");
+    return 0;
+}
+
+static const httpd_uri_t uri_style_css_handler =
+{
+    .uri = "/style.css",
+    .method = HTTP_GET,
+    .handler = style_css_get_handler,
 };
 
 esp_err_t
@@ -170,11 +285,11 @@ start_web_server (void)
         ESP_LOGI ("WEB-START", "Web registering");
 
         httpd_register_uri_handler(server, &uri_handler);
-        httpd_register_uri_handler(server, &uri_handler_1);
-        httpd_register_uri_handler(server, &uri_handler_2);
-        httpd_register_uri_handler(server, &uri_handler_3);
-        httpd_register_err_handler(server, HTTPD_404_NOT_FOUND,
-                                   http_404_error_handler);
+        httpd_register_uri_handler(server, &uri_favicon_ico_handler);
+        httpd_register_uri_handler(server, &uri_logo_png_handler);
+        httpd_register_uri_handler(server, &uri_address_json_handler);
+        httpd_register_uri_handler(server, &uri_main_js_handler);
+        httpd_register_uri_handler(server, &uri_style_css_handler);
     }
     else
     {
